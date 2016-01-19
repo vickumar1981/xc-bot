@@ -1,4 +1,4 @@
-package io.scalac.slack.example
+package com.markovchat.chat
 
 import java.util.concurrent.TimeUnit
 
