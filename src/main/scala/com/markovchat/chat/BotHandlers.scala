@@ -10,6 +10,13 @@ import scalaj.http.Http
 
 import net.liftweb.json._
 
+case class Result(url: String, title: String)
+case class ResponseData(results: List[Result])
+case class GoogleResult(responseData: ResponseData)
+
+case class Joke(id: Long, joke: String)
+case class JokeResult(`type`: String, value: Joke, categories: List[String])
+
 trait BotHandlers {
   private def askWikipediaUrl(q: String): String =
     "%s/%s".format(BotConfig.urls.wikiArticle, q)
@@ -21,6 +28,28 @@ trait BotHandlers {
     "%s/results?search_query=%s".format(BotConfig.urls.youTube, q)
 
   implicit val formats = DefaultFormats
+
+  protected def tellAJoke(q: String=""): Option[String] = {
+    var tellJokes = true
+    var joke = ""
+    while (tellJokes) {
+      try {
+        val resp = Http(BotConfig.urls.joke).asString
+        val results = parse(resp.body).extract[JokeResult]
+
+        val hasBadWords = results.categories.map(_.toLowerCase).contains("explicit")
+        tellJokes = (BotConfig.censored && hasBadWords) ||
+          results.value.joke.equalsIgnoreCase("Maybe. Any other questions?")
+
+        if (!tellJokes)
+          joke = results.value.joke
+      }
+      catch {
+        case _: Throwable => None
+      }
+    }
+    Some(joke)
+  }
 
   protected def askGoogle(q: String): Option[String] = {
     try {

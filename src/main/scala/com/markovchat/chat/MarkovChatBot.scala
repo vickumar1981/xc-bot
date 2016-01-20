@@ -20,7 +20,7 @@ class MarkovChatBot(override val bus: MessageEventBus) extends AbstractBot {
   override def help(channel: String): OutboundMessage =
     OutboundMessage(channel,
       s"$name will chat with you. \\n" +
-      "Usage: ? {chat message} {arguments separated by space}")
+      "Usage: [? | {message} | [google wiki youtube] {message}")
 
   val possibleOperations = Map(
     "+" -> ((x: Double, y: Double) => x+y),
@@ -35,11 +35,18 @@ class MarkovChatBot(override val bus: MessageEventBus) extends AbstractBot {
         .replaceAll("[ ][ ]+", " and ").toLowerCase
     })
 
-  private def handleCommand(response: Future[Any], message: BaseMessage) = {
+  private def handleCommand(response: Future[Any], message: BaseMessage,
+                           isJoke: Boolean=false) = {
     response.onSuccess({
       case msg: String =>
-        if (!msg.isEmpty)
-          publish(OutboundMessage(message.channel, msg))
+        if (!msg.isEmpty) {
+          val r = msg.replaceAll("&quot;", "\"")
+          if (isJoke) {
+            val r2 = r.replaceAll("Chuck Norris", s"""<@${message.user}>""")
+            publish(OutboundMessage(message.channel, r2))
+          }
+          else publish(OutboundMessage(message.channel, r))
+        }
     })
   }
 
@@ -76,30 +83,39 @@ class MarkovChatBot(override val bus: MessageEventBus) extends AbstractBot {
       )
 
     case Command(_, text, message) => {
-      val cleaned = cleanParse(text)
-      val rChaCha = BotSystem.learner ? AskChaCha(cleaned)
-      val rBotLibre = BotSystem.learner ? AskBotLibre(cleaned)
-      val rMegaHal = BotSystem.learner ? AskMegaHal(cleaned)
-      val guessVal = BotSystem.random.nextInt(317)
+      if (text.map(_.toLowerCase).contains("joke")) {
+        handleCommand(
+          BotSystem.learner ? TellAJoke(),
+          message,
+          isJoke = true
+        )
+      }
+      else {
+        val cleaned = cleanParse(text)
+        val rChaCha = BotSystem.learner ? AskChaCha(cleaned)
+        val rBotLibre = BotSystem.learner ? AskBotLibre(cleaned)
+        val rMegaHal = BotSystem.learner ? AskMegaHal(cleaned)
+        val guessVal = BotSystem.random.nextInt(719)
 
-      val commands = List("?", "google", "youtube", "wiki")
-      if (!text.isEmpty && !commands.contains(text(0))) {
-        val combined = for {
-          r1 <- rChaCha
-          r2 <- rBotLibre
-          r3 <- rMegaHal
-        } yield (r1, r2, r3)
+        val commands = List("?", "google", "youtube", "wiki")
+        if (!text.isEmpty && !commands.contains(text(0))) {
+          val combined = for {
+            r1 <- rBotLibre
+            r2 <- rChaCha
+            r3 <- rMegaHal
+          } yield (r1, r2, r3)
 
-        combined.onSuccess({
-          case (r1: String, r2: String, r3: String) => {
-            val msgToSend =
-              (if (r1.isEmpty)
-                if (r2.isEmpty || guessVal <= BotSystem.random.nextInt(67)) r3
-                else r2
-              else r1).toString
-            publish(OutboundMessage(message.channel, msgToSend))
-          }
-        })
+          combined.onSuccess({
+            case (r1: String, r2: String, r3: String) => {
+              val msgToSend =
+                (if (r1.isEmpty)
+                  if (r2.isEmpty || guessVal <= BotSystem.random.nextInt(67)) r3
+                  else r2
+                else r1).toString
+              publish(OutboundMessage(message.channel, msgToSend))
+            }
+          })
+        }
       }
     }
   }

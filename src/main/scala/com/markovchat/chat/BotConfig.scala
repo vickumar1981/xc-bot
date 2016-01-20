@@ -7,6 +7,7 @@ object BotConfig {
   private lazy val config = ConfigFactory.load()
 
   lazy val botName = config.getString("bot.name")
+  lazy val censored = config.getBoolean("bot.censorship")
 
   lazy val applicationId = config.getString("bot.applicationId")
   lazy val chatInstance = config.getString("bot.chatInstance")
@@ -18,5 +19,6 @@ object BotConfig {
     lazy val youTube = config.getString("bot.urls.youTube")
     lazy val botLibre = config.getString("bot.urls.botLibre")
     lazy val google = config.getString("bot.urls.google")
+    lazy val joke = config.getString("bot.urls.joke")
   }
 }

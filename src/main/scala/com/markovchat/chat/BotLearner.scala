@@ -11,18 +11,16 @@ import org.apache.commons.lang3.StringEscapeUtils
 import scala.util.Random
 import scalaj.http.Http
 
-case class Result(url: String, title: String)
-case class ResponseData(results: List[Result])
-case class GoogleResult(responseData: ResponseData)
-
+abstract class BotQuery{ def q: List[String] }
 case object StartLearning
 case object LearnMyName
-case class AskYouTube(q: List[String])
-case class AskWikipedia(q: List[String])
-case class AskChaCha(q: List[String])
-case class AskBotLibre(q: List[String])
-case class AskMegaHal(q: List[String])
-case class AskGoogle(q: List[String])
+case class AskYouTube(q: List[String]) extends BotQuery
+case class AskWikipedia(q: List[String]) extends BotQuery
+case class AskChaCha(q: List[String]) extends BotQuery
+case class AskBotLibre(q: List[String]) extends BotQuery
+case class AskMegaHal(q: List[String]) extends BotQuery
+case class AskGoogle(q: List[String]) extends BotQuery
+case class TellAJoke(q: List[String]=List.empty) extends BotQuery
 
 object BotSystem {
   val system = ActorSystem("SlackBotSystem")
@@ -37,7 +35,7 @@ class BotLearner extends Actor with BotHandlers {
   var isLearning: Boolean = true
 
   private def handleResponse(f: String => Option[String],
-                             input: String) = {
+                             input: String="") = {
     f(input.toLowerCase) match {
       case Some(s) => sender ! s
       case None => sender ! ""
@@ -73,6 +71,8 @@ class BotLearner extends Actor with BotHandlers {
         }
       }
     }
+    case (ques: TellAJoke) =>
+      handleResponse(tellAJoke)
     case (ques: AskGoogle) =>
       handleResponse(askGoogle, ques.q.mkString("+"))
     case (ques: AskWikipedia) =>
@@ -86,12 +86,14 @@ class BotLearner extends Actor with BotHandlers {
     case (ques: AskMegaHal) => {
       val response = BotSystem.hal.getSentence(ques.q.mkString(" "))
       sender ! response.toString
-        .replaceAll(" He ", " I ")
-        .replaceAll(" he ", " I ")
-        .replaceAll(" She ", " I ")
-        .replaceAll(" she ", " I ")
-        .replaceAll(" his ", " my ")
-        .replaceAll(" her ", " my ")
+        .replaceAll("He ", "I ")
+        .replaceAll("he ", "I ")
+        .replaceAll("She ", "I ")
+        .replaceAll("she ", "I ")
+        .replaceAll("his ", "my ")
+        .replaceAll("her ", "my ")
+        .replaceAll("tI ", "the ")
+        .replaceAll("TI ", "The ")
     }
   }
 
