@@ -37,8 +37,9 @@ trait BotHandlers {
         val resp = Http(BotConfig.urls.joke).asString
         val results = parse(resp.body).extract[JokeResult]
 
-        val hasBadWords = results.categories.map(_.toLowerCase).contains("explicit")
-        tellJokes = (BotConfig.censored && hasBadWords) ||
+        val isExplicit = results.categories.map(_.toLowerCase).contains("explicit")
+        val hasBadWords = BotConfig.badWords.exists(bw => results.value.joke.toLowerCase.contains(bw))
+        tellJokes = (BotConfig.censored && (hasBadWords || isExplicit)) ||
           results.value.joke.equalsIgnoreCase("Maybe. Any other questions?")
 
         if (!tellJokes)
