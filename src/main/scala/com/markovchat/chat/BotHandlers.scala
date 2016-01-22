@@ -9,6 +9,7 @@ import org.htmlcleaner.TagNode
 import scalaj.http.Http
 
 import net.liftweb.json._
+import scala.collection.JavaConversions._
 
 case class Result(url: String, title: String)
 case class ResponseData(results: List[Result])
@@ -18,6 +19,8 @@ case class Joke(id: Long, joke: String)
 case class JokeResult(`type`: String, value: Joke, categories: List[String])
 
 trait BotHandlers {
+  protected lazy val cleaner = new HtmlCleaner
+
   private def askWikipediaUrl(q: String): String =
     "%s/%s".format(BotConfig.urls.wikiArticle, q)
 
@@ -65,7 +68,6 @@ trait BotHandlers {
 
   protected def askWikipedia(q: String): Option[String] = {
     try {
-      val cleaner = new HtmlCleaner
       val link = askWikipediaUrl(q)
       val rootNode = cleaner.clean(new URL(link))
       rootNode.evaluateXPath("//a") match {
@@ -80,7 +82,6 @@ trait BotHandlers {
 
   protected def askYouTube(q: String): Option[String] = {
     try {
-      val cleaner = new HtmlCleaner
       val rootNode = cleaner.clean(new URL(askYouTubeUrl(q)))
       val possibleLinks = scala.collection.mutable.ListBuffer[String]()
       rootNode.evaluateXPath("//a") match {
@@ -107,7 +108,6 @@ trait BotHandlers {
 
   protected def askChaCha(q: String): Option[String] = {
     try {
-      val cleaner = new HtmlCleaner
       val rootNode = cleaner.clean(new URL(askChaChaUrl(q)))
       rootNode.evaluateXPath("//p[@class='qaAnswerText']") match {
         case tagList: Array[Object] => {

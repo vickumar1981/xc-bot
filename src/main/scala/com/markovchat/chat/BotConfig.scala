@@ -8,14 +8,15 @@ object BotConfig {
 
   lazy val botName = config.getString("bot.name")
   lazy val censored = config.getBoolean("bot.censorship")
-
-  lazy val badWords = List("fuck", "shit", "ass", "balls", "dick")
+  lazy val strategies = config.getStringList("bot.strategies")
+  lazy val badWords = config.getStringList("bot.badWords")
 
   lazy val applicationId = config.getString("bot.applicationId")
   lazy val chatInstance = config.getString("bot.chatInstance")
 
   object urls {
     lazy val randomWiki = config.getString("bot.urls.wiki.random")
+    lazy val randomQuote = config.getString("bot.urls.wiki.quote")
     lazy val wikiArticle = config.getString("bot.urls.wiki.article")
     lazy val askChaCha = config.getString("bot.urls.askChaCha")
     lazy val youTube = config.getString("bot.urls.youTube")

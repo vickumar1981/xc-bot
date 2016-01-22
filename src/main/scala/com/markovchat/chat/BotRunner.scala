@@ -28,9 +28,16 @@ object BotRunner extends Shutdownable {
 
     try {
       BotSystem.learner ! LearnMyName
-      BotSystem.system.scheduler.schedule(Duration.create(0, TimeUnit.SECONDS),
-        Duration.create(200, TimeUnit.SECONDS),
-        BotSystem.learner, StartLearning)
+      if (BotConfig.strategies.contains("articles"))
+        BotSystem.system.scheduler.schedule(Duration.create(0, TimeUnit.SECONDS),
+          Duration.create(500, TimeUnit.SECONDS),
+          BotSystem.learner, LearnFromArticles)
+
+      if (BotConfig.strategies.contains("quotes"))
+        BotSystem.system.scheduler.schedule(Duration.create(0, TimeUnit.SECONDS),
+          Duration.create(45, TimeUnit.SECONDS),
+          BotSystem.learner, LearnFromQuotes)
+
       slackBot ! Start
 
       BotSystem.system.awaitTermination()

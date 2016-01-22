@@ -12,7 +12,8 @@ import scala.util.Random
 import scalaj.http.Http
 
 abstract class BotQuery{ def q: List[String] }
-case object StartLearning
+case object LearnFromArticles
+case object LearnFromQuotes
 case object LearnMyName
 case class AskYouTube(q: List[String]) extends BotQuery
 case class AskWikipedia(q: List[String]) extends BotQuery
@@ -42,35 +43,60 @@ class BotLearner extends Actor with BotHandlers {
     }
   }
 
-  def receive = {
-    case (LearnMyName) => BotSystem.hal.add("My name is xc-bot")
-    case (StartLearning) => {
-      try {
-        if (isLearning) {
-          val cleaner = new HtmlCleaner
-          val rootNode = cleaner.clean(new URL(BotConfig.urls.randomWiki))
-          val elements = rootNode.getElementsByName("p", true)
-
-          for (elem <- elements) {
-            val text = StringEscapeUtils.unescapeHtml4(elem.getText.toString)
-            text.toString.split("\\.|\\?|\\!").map(t => {
-              if (t.trim().length > 15 && !t.trim().contains("[0-9]")) {
-                BotSystem.hal.add(t.trim() + ".")
-                sentencesLearned += 1
-              }
-            })
-          }
-          articlesLearned += 1
-        }
-      }
-      catch {
-        case _: Throwable => {
-          print("\n\nCan't learn anymore, articles: %s, sentences: %s\n\n"
-            .format(articlesLearned, sentencesLearned))
-          isLearning = false
-        }
+  private def handleLearning(f:() => Boolean) = {
+    try {
+      if (isLearning) {
+        f()
+        articlesLearned += 1
       }
     }
+    catch {
+      case _: Throwable => {
+        print("\n\nCan't learn anymore, articles: %s, sentences: %s\n\n"
+          .format(articlesLearned, sentencesLearned))
+        isLearning = false
+      }
+    }
+
+  }
+  private def learnFromQuotes() =
+    handleLearning(() => {
+      val rootNode = cleaner.clean(new URL(BotConfig.urls.randomQuote))
+      val elements = rootNode.getElementsByName("li", true)
+
+      for (elem <- elements) {
+        val text = StringEscapeUtils.unescapeHtml4(elem.getText.toString)
+        if (text.length() > 150 && !text.toLowerCase.contains("terms of use")) {
+          text.toString.split("\\.|\\?|\\!").map(t => {
+            BotSystem.hal.add(t.trim() + ".")
+            sentencesLearned += 1
+          })
+        }
+      }
+      true
+    })
+
+  private def learnFromArticles() =
+    handleLearning(() => {
+      val rootNode = cleaner.clean(new URL(BotConfig.urls.randomWiki))
+      val elements = rootNode.getElementsByName("p", true)
+
+      for (elem <- elements) {
+        val text = StringEscapeUtils.unescapeHtml4(elem.getText.toString)
+        text.toString.split("\\.|\\?|\\!").map(t => {
+          if (t.trim().length > 15 && !t.trim().contains("[0-9]")) {
+            BotSystem.hal.add(t.trim() + ".")
+            sentencesLearned += 1
+          }
+        })
+      }
+      true
+    })
+
+  def receive = {
+    case (LearnMyName) => BotSystem.hal.add("My name is xc-bot")
+    case (LearnFromArticles) => learnFromArticles()
+    case (LearnFromQuotes) => learnFromQuotes()
     case (ques: TellAJoke) =>
       handleResponse(tellAJoke)
     case (ques: AskGoogle) =>
