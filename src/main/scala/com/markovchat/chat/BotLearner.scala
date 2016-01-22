@@ -57,8 +57,13 @@ class BotLearner extends Actor with BotHandlers {
         isLearning = false
       }
     }
-
   }
+
+  private def learnSentence(s: String) = {
+    BotSystem.hal.add(s.trim() + ".")
+    sentencesLearned += 1
+  }
+
   private def learnFromQuotes() =
     handleLearning(() => {
       val rootNode = cleaner.clean(new URL(BotConfig.urls.randomQuote))
@@ -66,12 +71,11 @@ class BotLearner extends Actor with BotHandlers {
 
       for (elem <- elements) {
         val text = StringEscapeUtils.unescapeHtml4(elem.getText.toString)
-        if (text.length() > 150 && !text.toLowerCase.contains("terms of use")) {
-          text.toString.split("\\.|\\?|\\!").map(t => {
-            BotSystem.hal.add(t.trim() + ".")
-            sentencesLearned += 1
-          })
-        }
+        if (text.length() > 150 && !text.toLowerCase.contains("terms of use"))
+          text.toString.split("\\.|\\?|\\!").map(t =>
+            if (!t.contains("published") && !t.contains("quoted"))
+              learnSentence(t)
+          )
       }
       true
     })
@@ -84,10 +88,8 @@ class BotLearner extends Actor with BotHandlers {
       for (elem <- elements) {
         val text = StringEscapeUtils.unescapeHtml4(elem.getText.toString)
         text.toString.split("\\.|\\?|\\!").map(t => {
-          if (t.trim().length > 15 && !t.trim().contains("[0-9]")) {
-            BotSystem.hal.add(t.trim() + ".")
-            sentencesLearned += 1
-          }
+          if (t.trim().length > 15 && !t.trim().contains("[0-9]"))
+            learnSentence(t)
         })
       }
       true
@@ -112,14 +114,12 @@ class BotLearner extends Actor with BotHandlers {
     case (ques: AskMegaHal) => {
       val response = BotSystem.hal.getSentence(ques.q.mkString(" "))
       sender ! response.toString
-        .replaceAll("He ", "I ")
-        .replaceAll("he ", "I ")
-        .replaceAll("She ", "I ")
-        .replaceAll("she ", "I ")
-        .replaceAll("his ", "my ")
-        .replaceAll("her ", "my ")
-        .replaceAll("tI ", "the ")
-        .replaceAll("TI ", "The ")
+        .replaceAll(" He ", " I ")
+        .replaceAll(" he ", " I ")
+        .replaceAll(" She ", " I ")
+        .replaceAll(" she ", " I ")
+        .replaceAll(" his ", " my ")
+        .replaceAll(" her ", " my ")
     }
   }
 
