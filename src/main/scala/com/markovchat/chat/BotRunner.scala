@@ -30,12 +30,12 @@ object BotRunner extends Shutdownable {
       BotSystem.learner ! LearnMyName
       if (BotConfig.strategies.contains("articles"))
         BotSystem.system.scheduler.schedule(Duration.create(0, TimeUnit.SECONDS),
-          Duration.create(500, TimeUnit.SECONDS),
+          Duration.create(1500, TimeUnit.SECONDS),
           BotSystem.learner, LearnFromArticles)
 
       if (BotConfig.strategies.contains("quotes"))
         BotSystem.system.scheduler.schedule(Duration.create(0, TimeUnit.SECONDS),
-          Duration.create(45, TimeUnit.SECONDS),
+          Duration.create(300, TimeUnit.SECONDS),
           BotSystem.learner, LearnFromQuotes)
 
       slackBot ! Start
