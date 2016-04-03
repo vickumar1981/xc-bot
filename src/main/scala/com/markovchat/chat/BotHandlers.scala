@@ -21,16 +21,46 @@ case class JokeResult(`type`: String, value: Joke, categories: List[String])
 trait BotHandlers {
   protected lazy val cleaner = new HtmlCleaner
 
+  private def makeGiphyUrl(q: String): String = "%s/%s".format(BotConfig.urls.giphy, q)
+
   private def askWikipediaUrl(q: String): String =
     "%s/%s".format(BotConfig.urls.wikiArticle, q)
 
-  private def askChaChaUrl(q: String): String =
-    "%s/%s".format(BotConfig.urls.askChaCha, q)
+  private def askChaChaUrl(q: String): String = "%s/%s".format(BotConfig.urls.askChaCha, q)
 
   private def askYouTubeUrl(q: String): String =
     "%s/results?search_query=%s".format(BotConfig.urls.youTube, q)
 
   implicit val formats = DefaultFormats
+
+  private def parseHTMLTags(url: String, tag: String, attr: String, startPattern: String) = {
+    try {
+      val rootNode = cleaner.clean(new URL(url))
+      val possibleLinks = scala.collection.mutable.ListBuffer[String]()
+      rootNode.evaluateXPath("//%s".format(tag)) match {
+        case tagList: Array[Object] => {
+          for (t <- tagList) {
+            val e = t.asInstanceOf[TagNode]
+            val l = e.getAttributeByName(attr).toString
+            if (!l.isEmpty && l.startsWith(startPattern))
+              possibleLinks += l
+          }
+          if (!possibleLinks.isEmpty) {
+            val index = BotSystem.random.nextInt(possibleLinks.length)
+            Some(possibleLinks(index))
+          }
+          else None
+        }
+        case _ => None
+      }
+    }
+    catch {
+      case _: Throwable => None
+    }
+  }
+
+  protected def makeGiphyImage(q: String=""): Option[String] =
+    parseHTMLTags(makeGiphyUrl(q), "img", "src", "https://media")
 
   protected def tellAJoke(q: String=""): Option[String] = {
     var tellJokes = true
@@ -80,31 +110,8 @@ trait BotHandlers {
     }
   }
 
-  protected def askYouTube(q: String): Option[String] = {
-    try {
-      val rootNode = cleaner.clean(new URL(askYouTubeUrl(q)))
-      val possibleLinks = scala.collection.mutable.ListBuffer[String]()
-      rootNode.evaluateXPath("//a") match {
-        case tagList: Array[Object] => {
-          for (t <- tagList) {
-            val e = t.asInstanceOf[TagNode]
-            val l = e.getAttributeByName("href").toString
-            if (!l.isEmpty && l.startsWith("/watch"))
-              possibleLinks += l
-          }
-          if (!possibleLinks.isEmpty) {
-            val index = BotSystem.random.nextInt(possibleLinks.length)
-            Some(BotConfig.urls.youTube + possibleLinks(index))
-          }
-          else None
-        }
-        case _ => None
-      }
-    }
-    catch {
-      case _: Throwable => None
-    }
-  }
+  protected def askYouTube(q: String): Option[String] =
+    parseHTMLTags(askYouTubeUrl(q), "a", "href", "/watch")
 
   protected def askChaCha(q: String): Option[String] = {
     try {

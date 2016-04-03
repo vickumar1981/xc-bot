@@ -21,7 +21,9 @@ case class AskChaCha(q: List[String]) extends BotQuery
 case class AskBotLibre(q: List[String]) extends BotQuery
 case class AskMegaHal(q: List[String]) extends BotQuery
 case class AskGoogle(q: List[String]) extends BotQuery
+case class MakeGiphy(q: List[String]) extends BotQuery
 case class TellAJoke(q: List[String]=List.empty) extends BotQuery
+
 
 object BotSystem {
   val system = ActorSystem("SlackBotSystem")
@@ -111,6 +113,8 @@ class BotLearner extends Actor with BotHandlers {
       handleResponse(askChaCha, ques.q.mkString("+"))
     case (ques: AskBotLibre) =>
       handleResponse(askBotLibre, ques.q.mkString(" "))
+    case (ques: MakeGiphy) =>
+      handleResponse(makeGiphyImage, ques.q.mkString("-"))
     case (ques: AskMegaHal) => {
       val response = BotSystem.hal.getSentence(ques.q.mkString(" "))
       sender ! response.toString

@@ -50,6 +50,8 @@ class MarkovChatBot(override val bus: MessageEventBus) extends AbstractBot {
     })
   }
 
+  private def guessVal = BotSystem.random.nextInt(719)
+
   override def act: Receive = {
     case Command("?", operation :: args, message) if args.length >= 1 => {
       val op = possibleOperations.get(operation)
@@ -95,7 +97,6 @@ class MarkovChatBot(override val bus: MessageEventBus) extends AbstractBot {
         val rChaCha = BotSystem.learner ? AskChaCha(cleaned)
         val rBotLibre = BotSystem.learner ? AskBotLibre(cleaned)
         val rMegaHal = BotSystem.learner ? AskMegaHal(cleaned)
-        val guessVal = BotSystem.random.nextInt(719)
 
         val commands = List("?", "google", "youtube", "wiki")
         if (!text.isEmpty && !commands.contains(text(0))) {
@@ -116,6 +117,16 @@ class MarkovChatBot(override val bus: MessageEventBus) extends AbstractBot {
             }
           })
         }
+      }
+    }
+    case bm: BaseMessage => {
+      val cleaned = cleanParse(bm.text.trim.split(' ').toList)
+      if (cleaned.size <= 10 && guessVal <= BotSystem.random.nextInt(17)) {
+        val rMakeGiphy = BotSystem.learner ? MakeGiphy(cleaned)
+
+        rMakeGiphy.onSuccess({
+          case (r1: String) => publish(OutboundMessage(bm.channel, r1))
+        })
       }
     }
   }
