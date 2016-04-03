@@ -49,7 +49,7 @@ trait BotHandlers {
           if (!possibleLinks.isEmpty) {
             val index = BotSystem.random.nextInt(possibleLinks.length)
             val retVal = possibleLinks(index)
-            if (urlPrefix.isEmpty) Some(retVal)
+            if (urlPrefix.isEmpty) Some(retVal.replaceAll("200_s.gif", "giphy.gif"))
             else Some(urlPrefix + retVal)
           }
           else None
