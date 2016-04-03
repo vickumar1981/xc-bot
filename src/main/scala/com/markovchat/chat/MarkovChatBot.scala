@@ -68,6 +68,11 @@ class MarkovChatBot(override val bus: MessageEventBus) extends AbstractBot {
       publish(OutboundMessage(message.channel, s"Commands youtube, wiki, google, ?"))
     }
 
+    case Command("giphy", text, message) =>
+      handleCommand(
+        BotSystem.learner ? MakeGiphy(cleanParse(text)),
+        message)
+
     case Command("wiki", text, message) =>
       handleCommand(
         BotSystem.learner ? AskWikipedia(cleanParse(text)),
