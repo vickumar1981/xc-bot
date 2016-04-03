@@ -33,7 +33,8 @@ trait BotHandlers {
 
   implicit val formats = DefaultFormats
 
-  private def parseHTMLTags(url: String, tag: String, attr: String, startPattern: String) = {
+  private def parseHTMLTags(url: String, tag: String, attr: String,
+                            startPattern: String, urlPrefix: String = "") = {
     try {
       val rootNode = cleaner.clean(new URL(url))
       val possibleLinks = scala.collection.mutable.ListBuffer[String]()
@@ -47,7 +48,9 @@ trait BotHandlers {
           }
           if (!possibleLinks.isEmpty) {
             val index = BotSystem.random.nextInt(possibleLinks.length)
-            Some(possibleLinks(index))
+            val retVal = possibleLinks(index)
+            if (urlPrefix.isEmpty) Some(retVal)
+            else Some(urlPrefix + retVal)
           }
           else None
         }
@@ -111,7 +114,7 @@ trait BotHandlers {
   }
 
   protected def askYouTube(q: String): Option[String] =
-    parseHTMLTags(askYouTubeUrl(q), "a", "href", "/watch")
+    parseHTMLTags(askYouTubeUrl(q), "a", "href", "/watch", BotConfig.urls.youTube)
 
   protected def askChaCha(q: String): Option[String] = {
     try {
