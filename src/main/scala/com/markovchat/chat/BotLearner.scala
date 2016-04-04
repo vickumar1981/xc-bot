@@ -8,13 +8,17 @@ import org.jibble.jmegahal._
 import org.htmlcleaner.HtmlCleaner
 import org.apache.commons.lang3.StringEscapeUtils
 
+import scala.collection.mutable.Queue
+
 import scala.util.Random
 import scalaj.http.Http
 
 abstract class BotQuery{ def q: List[String] }
 case object LearnFromArticles
 case object LearnFromQuotes
+case object LearnInsults
 case object LearnMyName
+
 case class AskYouTube(q: List[String]) extends BotQuery
 case class AskWikipedia(q: List[String]) extends BotQuery
 case class AskChaCha(q: List[String]) extends BotQuery
@@ -23,7 +27,7 @@ case class AskMegaHal(q: List[String]) extends BotQuery
 case class AskGoogle(q: List[String]) extends BotQuery
 case class MakeGiphy(q: List[String]) extends BotQuery
 case class TellAJoke(q: List[String]=List.empty) extends BotQuery
-
+case class TellAnInsult(q: List[String]=List.empty) extends BotQuery
 
 object BotSystem {
   val system = ActorSystem("SlackBotSystem")
@@ -33,9 +37,21 @@ object BotSystem {
 }
 
 class BotLearner extends Actor with BotHandlers {
+
+  class FiniteQueue[A](q: Queue[A]) {
+    def enqueueFinite(elem: A, maxSize: Int = 150): Queue[A] = {
+      q += elem
+      while (q.size > maxSize) { q.dequeue }
+      q
+    }
+  }
+
+  implicit def queue2finitequeue[A](q: Queue[A]) = new FiniteQueue[A](q)
+
   var articlesLearned: Long = 0
   var sentencesLearned: Long = 0
   var isLearning: Boolean = true
+  var insultsLearned: Queue[String] = Queue[String]()
 
   private def handleResponse(f: String => Option[String],
                              input: String="") = {
@@ -59,6 +75,15 @@ class BotLearner extends Actor with BotHandlers {
         isLearning = false
       }
     }
+  }
+
+  private def learnInsult() = {
+    val resp = Http(BotConfig.urls.insult)
+      .header("Content-type", "application/xml").asString.body
+
+    val r = resp.split("<insult>")(1).split("</insult>")(0)
+    if (r.nonEmpty)
+      insultsLearned.enqueueFinite(r.trim)
   }
 
   private def learnSentence(s: String) = {
@@ -101,20 +126,21 @@ class BotLearner extends Actor with BotHandlers {
     case (LearnMyName) => BotSystem.hal.add("My name is xc-bot")
     case (LearnFromArticles) => learnFromArticles()
     case (LearnFromQuotes) => learnFromQuotes()
-    case (ques: TellAJoke) =>
-      handleResponse(tellAJoke)
-    case (ques: AskGoogle) =>
-      handleResponse(askGoogle, ques.q.mkString("+"))
-    case (ques: AskWikipedia) =>
-      handleResponse(askWikipedia, ques.q.mkString("_"))
-    case (ques: AskYouTube) =>
-      handleResponse(askYouTube, ques.q.mkString("+"))
-    case (ques: AskChaCha) =>
-      handleResponse(askChaCha, ques.q.mkString("+"))
-    case (ques: AskBotLibre) =>
-      handleResponse(askBotLibre, ques.q.mkString(" "))
-    case (ques: MakeGiphy) =>
-      handleResponse(makeGiphyImage, ques.q.mkString("-"))
+    case (LearnInsults) => learnInsult()
+    case (ques: TellAnInsult) => handleResponse((q: String) => {
+      if (insultsLearned.size > 0) {
+        val resp = insultsLearned.dequeue
+        Some(resp)
+      }
+      else None
+    })
+    case (ques: TellAJoke) => handleResponse(tellAJoke)
+    case (ques: AskGoogle) => handleResponse(askGoogle, ques.q.mkString("+"))
+    case (ques: AskWikipedia) => handleResponse(askWikipedia, ques.q.mkString("_"))
+    case (ques: AskYouTube) => handleResponse(askYouTube, ques.q.mkString("+"))
+    case (ques: AskChaCha) => handleResponse(askChaCha, ques.q.mkString("+"))
+    case (ques: AskBotLibre) => handleResponse(askBotLibre, ques.q.mkString(" "))
+    case (ques: MakeGiphy) => handleResponse(makeGiphyImage, ques.q.mkString("-"))
     case (ques: AskMegaHal) => {
       val response = BotSystem.hal.getSentence(ques.q.mkString(" "))
       sender ! response.toString

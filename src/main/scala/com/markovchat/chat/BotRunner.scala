@@ -28,6 +28,11 @@ object BotRunner extends Shutdownable {
 
     try {
       BotSystem.learner ! LearnMyName
+
+      BotSystem.system.scheduler.schedule(Duration.create(0, TimeUnit.SECONDS),
+        Duration.create(480, TimeUnit.SECONDS),
+        BotSystem.learner, LearnInsults)
+
       if (BotConfig.strategies.contains("articles"))
         BotSystem.system.scheduler.schedule(Duration.create(0, TimeUnit.SECONDS),
           Duration.create(1500, TimeUnit.SECONDS),

@@ -24,5 +24,6 @@ object BotConfig {
     lazy val google = config.getString("bot.urls.google")
     lazy val joke = config.getString("bot.urls.joke")
     lazy val giphy = config.getString("bot.urls.giphy")
+    lazy val insult = config.getString("bot.urls.insult")
   }
 }

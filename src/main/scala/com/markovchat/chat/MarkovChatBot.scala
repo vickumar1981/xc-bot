@@ -20,7 +20,7 @@ class MarkovChatBot(override val bus: MessageEventBus) extends AbstractBot {
   override def help(channel: String): OutboundMessage =
     OutboundMessage(channel,
       s"$name will chat with you. \\n" +
-      "Usage: [? | {message} | [google wiki youtube] {message}")
+      "Usage: [? | {message} | [google wiki youtube giphy insult joke] {message}")
 
   val possibleOperations = Map(
     "+" -> ((x: Double, y: Double) => x+y),
@@ -36,13 +36,17 @@ class MarkovChatBot(override val bus: MessageEventBus) extends AbstractBot {
     })
 
   private def handleCommand(response: Future[Any], message: BaseMessage,
-                           isJoke: Boolean=false) = {
+                           isJoke: Boolean=false, isInsult: Boolean=false) = {
     response.onSuccess({
       case msg: String =>
         if (!msg.isEmpty) {
           val r = msg.replaceAll("&quot;", "\"")
           if (isJoke) {
             val r2 = r.replaceAll("Chuck Norris", s"""<@${message.user}>""")
+            publish(OutboundMessage(message.channel, r2))
+          }
+          else if (isInsult) {
+            val r2 = s"""<@${message.user}>""" + " " + r
             publish(OutboundMessage(message.channel, r2))
           }
           else publish(OutboundMessage(message.channel, r))
@@ -65,7 +69,8 @@ class MarkovChatBot(override val bus: MessageEventBus) extends AbstractBot {
     }
 
     case Command("?", _, message) => {
-      publish(OutboundMessage(message.channel, s"Commands youtube, wiki, google, ?"))
+      publish(OutboundMessage(message.channel,
+        s"Usage: [? | {message} | [google wiki youtube giphy insult joke] {message}"))
     }
 
     case Command("giphy", text, message) =>
@@ -97,6 +102,13 @@ class MarkovChatBot(override val bus: MessageEventBus) extends AbstractBot {
           isJoke = true
         )
       }
+      else if (text.map(_.toLowerCase).contains("insult")) {
+        handleCommand(
+          BotSystem.learner ? TellAnInsult(),
+          message,
+          isInsult = true
+        )
+      }
       else {
         val cleaned = cleanParse(text)
         val rChaCha = BotSystem.learner ? AskChaCha(cleaned)
@@ -125,8 +137,18 @@ class MarkovChatBot(override val bus: MessageEventBus) extends AbstractBot {
       }
     }
     case bm: BaseMessage => {
+
       val cleaned = cleanParse(bm.text.trim.split(' ').toList)
-      if (cleaned.size <= 10 && guessVal <= BotSystem.random.nextInt(17)) {
+      if (bm.user.equalsIgnoreCase("uslackbot")  && guessVal <= BotSystem.random.nextInt(31)) {
+        val r = BotSystem.learner ? TellAnInsult()
+        r.onSuccess({
+          case (r1: String) => {
+            val r2 = s"""<@${bm.user}>""" + " " + r1
+            publish(OutboundMessage(bm.channel, r2))
+          }
+        })
+      }
+      else if (cleaned.size <= 10 && guessVal <= BotSystem.random.nextInt(17)) {
         val rMakeGiphy = BotSystem.learner ? MakeGiphy(cleaned)
 
         rMakeGiphy.onSuccess({
