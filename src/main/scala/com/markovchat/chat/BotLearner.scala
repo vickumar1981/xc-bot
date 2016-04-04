@@ -82,7 +82,7 @@ class BotLearner extends Actor with BotHandlers {
       .header("Content-type", "application/xml").asString.body
 
     val r = resp.split("<insult>")(1).split("</insult>")(0)
-    if (r.nonEmpty)
+    if (r.nonEmpty && !r.contains(" mom"))
       insultsLearned.enqueueFinite(r.trim)
   }
 
