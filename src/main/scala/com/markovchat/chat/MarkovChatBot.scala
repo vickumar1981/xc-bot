@@ -138,7 +138,7 @@ class MarkovChatBot(override val bus: MessageEventBus) extends AbstractBot {
     }
     case bm: BaseMessage => {
       val cleaned = cleanParse(bm.text.trim.split(' ').toList)
-      if (bm.user.equalsIgnoreCase("uslackbot")  && guessVal <= BotSystem.random.nextInt(41)) {
+      if (bm.user.equalsIgnoreCase("uslackbot")  && guessVal <= BotSystem.random.nextInt(113)) {
         val r = BotSystem.learner ? TellAnInsult()
         r.onSuccess({
           case (r1: String) => {
@@ -147,7 +147,7 @@ class MarkovChatBot(override val bus: MessageEventBus) extends AbstractBot {
           }
         })
       }
-      else if (cleaned.size <= 10 && guessVal <= BotSystem.random.nextInt(37)) {
+      else if (cleaned.size <= 10 && guessVal <= BotSystem.random.nextInt(71)) {
         val rMakeGiphy = BotSystem.learner ? MakeGiphy(cleaned)
 
         rMakeGiphy.onSuccess({
