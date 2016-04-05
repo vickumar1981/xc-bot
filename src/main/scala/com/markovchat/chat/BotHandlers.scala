@@ -92,7 +92,7 @@ trait BotHandlers {
     try {
       val resp = Http(BotConfig.urls.google).param("v", "1.0").param("q", q).asString
       val results = parse(resp.body).extract[GoogleResult]
-      Some(results.responseData.results(0).url)
+      Some(results.responseData.results.head.url)
     }
     catch {
       case _: Throwable => None
@@ -121,7 +121,7 @@ trait BotHandlers {
       val rootNode = cleaner.clean(new URL(askChaChaUrl(q)))
       rootNode.evaluateXPath("//p[@class='qaAnswerText']") match {
         case tagList: Array[Object] => {
-          val r = StringEscapeUtils.unescapeHtml4(tagList(0).asInstanceOf[TagNode].getText().toString).trim()
+          val r = StringEscapeUtils.unescapeHtml4(tagList.head.asInstanceOf[TagNode].getText().toString).trim()
           if (r.contains("ChaCha"))
             Some(r.substring(0, r.indexOf("ChaCha")))
           else
@@ -153,7 +153,7 @@ trait BotHandlers {
           .postData(reqMsg)
           .header("Content-type", "application/xml").asString.body
 
-        val r = resp.split("<message>")(1).split("</message>")(0)
+        val r = resp.split("<message>")(1).split("</message>").head
         if (r.isEmpty || r.contains("no idea") ||
           r.contains("do not understand") || r.contains("don't understand"))
           None

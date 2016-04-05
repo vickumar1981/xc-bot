@@ -81,7 +81,7 @@ class BotLearner extends Actor with BotHandlers {
     val resp = Http(BotConfig.urls.insult)
       .header("Content-type", "application/xml").asString.body
 
-    val r = resp.split("<insult>")(1).split("</insult>")(0)
+    val r = resp.split("<insult>")(1).split("</insult>").head
     if (r.nonEmpty && !r.contains(" mom"))
       insultsLearned.enqueueFinite(r.trim)
   }
@@ -114,8 +114,9 @@ class BotLearner extends Actor with BotHandlers {
 
       for (elem <- elements) {
         val text = StringEscapeUtils.unescapeHtml4(elem.getText.toString)
+        val nums = ('0' to '9').toSet
         text.toString.split("\\.|\\?|\\!").map(t => {
-          if (t.trim().length > 15 && !t.trim().contains("[0-9]"))
+          if (t.trim().length > 15 && !t.trim().exists(nums.contains(_)))
             learnSentence(t)
         })
       }

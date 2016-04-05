@@ -116,7 +116,7 @@ class MarkovChatBot(override val bus: MessageEventBus) extends AbstractBot {
         val rMegaHal = BotSystem.learner ? AskMegaHal(cleaned)
 
         val commands = List("?", "google", "youtube", "wiki")
-        if (!text.isEmpty && !commands.contains(text(0))) {
+        if (!text.isEmpty && !commands.contains(text.head)) {
           val combined = for {
             r1 <- rBotLibre
             r2 <- rChaCha
@@ -125,11 +125,11 @@ class MarkovChatBot(override val bus: MessageEventBus) extends AbstractBot {
 
           combined.onSuccess({
             case (r1: String, r2: String, r3: String) => {
-              val msgToSend =
+              val msgToSend: String =
                 (if (r1.isEmpty)
                   if (r2.isEmpty || guessVal <= BotSystem.random.nextInt(67)) r3
                   else r2
-                else r1).toString
+                else r1)
               publish(OutboundMessage(message.channel, msgToSend))
             }
           })

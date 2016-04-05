@@ -43,7 +43,7 @@ class CustomSlackBotActor(modules: BotModules, eventBus: MessageEventBus, websoc
       log.info(url)
       log.info("trying to connect to websockets channel")
       val dropProtocol = url.drop(6)
-      val host = dropProtocol.split('/')(0)
+      val host = dropProtocol.split('/').head
       val resource = dropProtocol.drop(host.length)
 
       implicit val timeout: Timeout = 5.seconds
