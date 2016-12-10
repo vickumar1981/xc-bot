@@ -143,14 +143,9 @@ class BotLearner extends Actor with BotHandlers {
     case (ques: AskBotLibre) => handleResponse(askBotLibre, ques.q.mkString(" "))
     case (ques: MakeGiphy) => handleResponse(makeGiphyImage, ques.q.mkString("-"))
     case (ques: AskMegaHal) => {
-      val response = BotSystem.hal.getSentence(ques.q.mkString(" "))
+      val randomIndex = BotSystem.random.nextInt(ques.q.length)
+      val response = BotSystem.hal.getSentence(ques.q(randomIndex))
       sender ! response.toString
-        .replaceAll(" He ", " I ")
-        .replaceAll(" he ", " I ")
-        .replaceAll(" She ", " I ")
-        .replaceAll(" she ", " I ")
-        .replaceAll(" his ", " my ")
-        .replaceAll(" her ", " my ")
     }
   }
 

@@ -137,22 +137,24 @@ class MarkovChatBot(override val bus: MessageEventBus) extends AbstractBot {
       }
     }
     case bm: BaseMessage => {
-      val cleaned = cleanParse(bm.text.trim.split(' ').toList)
-      if (bm.user.equalsIgnoreCase("uslackbot")  && guessVal <= BotSystem.random.nextInt(113)) {
-        val r = BotSystem.learner ? TellAnInsult()
-        r.onSuccess({
-          case (r1: String) => {
-            val r2 = s"""<@${bm.user}>""" + " " + r1
-            publish(OutboundMessage(bm.channel, r2))
-          }
-        })
-      }
-      else if (cleaned.size <= 10 && guessVal <= BotSystem.random.nextInt(71)) {
-        val rMakeGiphy = BotSystem.learner ? MakeGiphy(cleaned)
+      if (!BotConfig.censored) {
+        val cleaned = cleanParse(bm.text.trim.split(' ').toList)
+        if (bm.user.equalsIgnoreCase("uslackbot") && guessVal <= BotSystem.random.nextInt(113)) {
+          val r = BotSystem.learner ? TellAnInsult()
+          r.onSuccess({
+            case (r1: String) => {
+              val r2 = s"""<@${bm.user}>""" + " " + r1
+              publish(OutboundMessage(bm.channel, r2))
+            }
+          })
+        }
+        else if (cleaned.size <= 10 && guessVal <= BotSystem.random.nextInt(71)) {
+          val rMakeGiphy = BotSystem.learner ? MakeGiphy(cleaned)
 
-        rMakeGiphy.onSuccess({
-          case (r1: String) => publish(OutboundMessage(bm.channel, r1))
-        })
+          rMakeGiphy.onSuccess({
+            case (r1: String) => publish(OutboundMessage(bm.channel, r1))
+          })
+        }
       }
     }
   }
