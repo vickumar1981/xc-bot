@@ -103,7 +103,8 @@ class MarkovChatBot(override val bus: MessageEventBus) extends AbstractBot {
       )
     }
 
-    case Command(c: String, text, message) => {
+    case Command(c: String, t, message) => {
+      val text = List(c) ++ t
       if (text.map(_.toLowerCase).contains("joke")) {
         println("Requesting joke")
         handleCommand(
@@ -121,7 +122,7 @@ class MarkovChatBot(override val bus: MessageEventBus) extends AbstractBot {
         )
       }
       else {
-        val cleaned = cleanParse(List(c) ++ text)
+        val cleaned = cleanParse(text)
         val rChaCha = BotSystem.learner ? AskChaCha(cleaned)
         val rBotLibre = BotSystem.learner ? AskBotLibre(cleaned)
         val rMegaHal = BotSystem.learner ? AskMegaHal(cleaned)
