@@ -8,6 +8,7 @@ object BotConfig {
 
   lazy val botName = config.getString("bot.name")
   lazy val censored = config.getBoolean("bot.censorship")
+  lazy val eavesdropping = config.getBoolean("bot.eavesdropping")
   lazy val strategies = config.getStringList("bot.strategies")
   lazy val badWords = config.getStringList("bot.badWords")
 

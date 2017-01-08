@@ -26,7 +26,7 @@ trait BotHandlers {
   private def askWikipediaUrl(q: String): String =
     "%s/%s".format(BotConfig.urls.wikiArticle, q)
 
-  private def askChaChaUrl(q: String): String = "%s/%s".format(BotConfig.urls.askChaCha, q)
+  private def askChaChaUrl(q: String): String = "%s?q=%s".format(BotConfig.urls.askChaCha, q)
 
   private def askYouTubeUrl(q: String): String =
     "%s/results?search_query=%s".format(BotConfig.urls.youTube, q)
@@ -82,7 +82,10 @@ trait BotHandlers {
           joke = results.value.joke
       }
       catch {
-        case _: Throwable => None
+        case t: Throwable => {
+          println("error telling joke: %s".format(t.toString))
+          None
+        }
       }
     }
     Some(joke)
@@ -95,7 +98,10 @@ trait BotHandlers {
       Some(results.responseData.results.head.url)
     }
     catch {
-      case _: Throwable => None
+      case t: Throwable => {
+        println("error asking google: %s".format(t.toString))
+        None
+      }
     }
   }
 
@@ -109,7 +115,10 @@ trait BotHandlers {
       }
     }
     catch {
-      case _: Throwable => None
+      case t: Throwable => {
+        println("error asking wikipedia: %s".format(t.toString))
+        None
+      }
     }
   }
 
@@ -119,19 +128,19 @@ trait BotHandlers {
   protected def askChaCha(q: String): Option[String] = {
     try {
       val rootNode = cleaner.clean(new URL(askChaChaUrl(q)))
-      rootNode.evaluateXPath("//p[@class='qaAnswerText']") match {
+      rootNode.evaluateXPath("//div[@class='sa_headline_block']") match {
         case tagList: Array[Object] => {
           val r = StringEscapeUtils.unescapeHtml4(tagList.head.asInstanceOf[TagNode].getText().toString).trim()
-          if (r.contains("ChaCha"))
-            Some(r.substring(0, r.indexOf("ChaCha")))
-          else
-            Some(r)
+          Some(r.replaceAll("\n", " ").replaceAll("\t", " "))
         }
         case _ => None
       }
     }
     catch {
-      case _: Throwable => None
+      case t: Throwable => {
+        println("error asking askchacha: %s".format(t.toString))
+        None
+      }
     }
   }
 
@@ -142,16 +151,19 @@ trait BotHandlers {
 
         val reqMsg =
           """
-            |<chat instance="%s">
-            |<application>%s</application>
+            |<chat instance="%s" application="%s">
             |<message>%s</message>
             |</chat>
           """.format(BotConfig.chatInstance,
             BotConfig.applicationId, q).stripMargin
 
+        print("\nbot libre request: %s\n".format(reqMsg))
+
         val resp = Http(BotConfig.urls.botLibre)
           .postData(reqMsg)
           .header("Content-type", "application/xml").asString.body
+
+        println("\nbot libre response: %s\n".format(resp))
 
         val r = resp.split("<message>")(1).split("</message>").head
         if (r.isEmpty || r.contains("no idea") ||
@@ -162,7 +174,10 @@ trait BotHandlers {
       else None
     }
     catch {
-      case _: Throwable => None
+      case t: Throwable => {
+        println("error asking bot libre: %s".format(t.toString))
+        None
+      }
     }
   }
 

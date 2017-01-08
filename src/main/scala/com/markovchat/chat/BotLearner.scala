@@ -56,8 +56,14 @@ class BotLearner extends Actor with BotHandlers {
   private def handleResponse(f: String => Option[String],
                              input: String="") = {
     f(input.toLowerCase) match {
-      case Some(s) => sender ! s
-      case None => sender ! ""
+      case Some(s) => {
+        println("Sending response: %s".format(s))
+        sender ! s
+      }
+      case None => {
+        println("No response to send.")
+        sender ! ""
+      }
     }
   }
 
@@ -129,22 +135,47 @@ class BotLearner extends Actor with BotHandlers {
     case (LearnFromQuotes) => learnFromQuotes()
     case (LearnInsults) => learnInsult()
     case (ques: TellAnInsult) => handleResponse((q: String) => {
+      println("Received request to tell insult")
       if (insultsLearned.size > 0) {
         val resp = insultsLearned.dequeue
         Some(resp)
       }
       else None
     })
-    case (ques: TellAJoke) => handleResponse(tellAJoke)
-    case (ques: AskGoogle) => handleResponse(askGoogle, ques.q.mkString("+"))
-    case (ques: AskWikipedia) => handleResponse(askWikipedia, ques.q.mkString("_"))
-    case (ques: AskYouTube) => handleResponse(askYouTube, ques.q.mkString("+"))
-    case (ques: AskChaCha) => handleResponse(askChaCha, ques.q.mkString("+"))
-    case (ques: AskBotLibre) => handleResponse(askBotLibre, ques.q.mkString(" "))
-    case (ques: MakeGiphy) => handleResponse(makeGiphyImage, ques.q.mkString("-"))
+    case (ques: TellAJoke) => {
+      println("Received request to tell a joke")
+      handleResponse(tellAJoke)
+    }
+    case (ques: AskGoogle) => {
+      println("Received request to ask google")
+      handleResponse(askGoogle, ques.q.mkString("+"))
+    }
+    case (ques: AskWikipedia) => {
+      println("Received request to ask wikipedia")
+      handleResponse(askWikipedia, ques.q.mkString("_"))
+    }
+    case (ques: AskYouTube) => {
+      println("Received request to ask youtube")
+      handleResponse(askYouTube, ques.q.mkString("+"))
+    }
+    case (ques: AskChaCha) => {
+      println("Received request to ask chacha")
+      handleResponse(askChaCha, ques.q.mkString("+"))
+    }
+    case (ques: AskBotLibre) => {
+      println("Received request to ask bot libre")
+      handleResponse(askBotLibre, ques.q.mkString(" "))
+    }
+    case (ques: MakeGiphy) => {
+      println("Received request to search giphy")
+      handleResponse(makeGiphyImage, ques.q.mkString("-"))
+    }
     case (ques: AskMegaHal) => {
+      println("Received request to ask megahal")
       val randomIndex = BotSystem.random.nextInt(ques.q.length)
       val response = BotSystem.hal.getSentence(ques.q(randomIndex))
+        .replaceAll("\n", " ").replaceAll("\t", " ")
+      println("Sending response: %s".format(response.toString))
       sender ! response.toString
     }
   }
