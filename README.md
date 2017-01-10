@@ -17,3 +17,5 @@ to Run:
 ```
 sbt clean run
 ```
+
+![xc-bot screenshot](screenshot.png?raw=true "xc-bot screenshot")
