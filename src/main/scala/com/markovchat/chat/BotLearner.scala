@@ -58,7 +58,7 @@ class BotLearner extends Actor with BotHandlers {
     f(input.toLowerCase) match {
       case Some(s) => {
         println("Sending response: %s".format(s))
-        sender ! s
+        sender ! s.replaceAll("&\\S+;", "")
       }
       case None => {
         println("No response to send.")
